@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Database — Career Guidance System</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="brand-mark">CG</div>
+        <div>
+          <div class="brand-name">Career Guidance System</div>
+          <div class="brand-sub">Knowledge-Based · Decision Tree · AI</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <a href="/" class="header-link">← Back to Dashboard</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="students-layout">
+
+    <!-- Page title -->
+    <div class="page-hero">
+      <h1 class="page-title">Student Database</h1>
+      <p class="page-sub">6,000 students from the dataset · Browse, search, and import records</p>
+    </div>
+
+    <!-- Import card -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <span class="card-title">Import CSV Data</span>
+      </div>
+      <p class="import-desc">Load all 6,000 student records from the CSV file into storage. This makes them searchable in the table below and available for the "Test CSV Student" feature on the dashboard.</p>
+      <div class="import-row">
+        <button class="btn-primary" id="import-btn" onclick="importCSV()">Import CSV →</button>
+        <div id="import-msg" style="display:none" class="import-msg"></div>
+      </div>
+    </div>
+
+    <!-- Students table card -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">All Students</span>
+        <input type="text" id="search" class="search-input" placeholder="Search by name or career…" oninput="searchStudents()"/>
+      </div>
+      <div id="students-table">
+        <p class="table-empty">Loading… if the table stays empty, click Import CSV above first.</p>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <span>Built with Python · Flask · scikit-learn · Decision Trees · Knowledge Graphs · Forward Chaining</span>
+    <span class="footer-divider">|</span>
+    <span>APT3020 Project</span>
+  </footer>
+
+<script>
+let currentPage = 1;
+let searchTimer = null;
+
+const RIASEC_COLORS = { R:'#ede9fe', I:'#d1fae5', A:'#fce7f3', S:'#dbeafe', E:'#fef3c7', C:'#d1fae5' };
+const RIASEC_TEXT   = { R:'#5b21b6', I:'#065f46', A:'#9d174d', S:'#1e40af', E:'#92400e', C:'#065f46' };
+const CAREER_RIASEC = {
+  'Software Engineer':'R','Game Developer':'R','Construction Engineer':'R',
+  'Doctor':'I','Scientist':'I','Stock Investor':'I',
+  'Artist':'A','Writer':'A','Designer':'A',
+  'Teacher':'S','Government Officer':'S','Social Network Studies':'S',
+  'Lawyer':'E','Business Owner':'E','Real Estate Developer':'E',
+  'Accountant':'C','Banker':'C'
+};
+const RIASEC_NAMES = { R:'Realistic', I:'Investigative', A:'Artistic', S:'Social', E:'Enterprising', C:'Conventional' };
+
+function importCSV() {
+  const btn = document.getElementById('import-btn');
+  btn.textContent = 'Importing…'; btn.disabled = true;
+  fetch('/import-csv', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path:'data/student-scores-6k.csv'}) })
+    .then(r=>r.json()).then(data=>{
+      const msg = document.getElementById('import-msg');
+      msg.style.display = 'block';
+      if (data.error) { msg.className='import-msg error'; msg.textContent=data.error; }
+      else { msg.className='import-msg success'; msg.textContent=`✓ ${data.message} (${data.imported.toLocaleString()} records)`; loadStudents(1); }
+      btn.textContent='Import CSV →'; btn.disabled=false;
+    });
+}
+
+function searchStudents() { clearTimeout(searchTimer); searchTimer=setTimeout(()=>loadStudents(1),400); }
+
+function loadStudents(page) {
+  currentPage = page;
+  const search = document.getElementById('search').value;
+  fetch(`/api/students?page=${page}&search=${encodeURIComponent(search)}`).then(r=>r.json()).then(renderTable);
+}
+
+function renderTable(data) {
+  const el = document.getElementById('students-table');
+  if (!data.students || data.students.length === 0) {
+    el.innerHTML = '<p class="table-empty">No students found. Import the CSV first.</p>';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+  let html = `<div class="table-wrap"><table class="s-table">
+    <thead><tr><th>Student</th><th>Career Aspiration</th><th>RIASEC</th><th>Math</th><th>Biology</th><th>English</th><th>Study hrs/wk</th></tr></thead><tbody>`;
+  data.students.forEach(s => {
+    const r = CAREER_RIASEC[s.career_aspiration] || '?';
+    html += `<tr>
+      <td><strong>${s.first_name} ${s.last_name}</strong><div class="cell-sub">${s.email}</div></td>
+      <td>${s.career_aspiration}</td>
+      <td><span class="riasec-tag" style="background:${RIASEC_COLORS[r]||'#f5f5f5'};color:${RIASEC_TEXT[r]||'#555'}">${r} · ${RIASEC_NAMES[r]||'?'}</span></td>
+      <td class="score-cell">${s.scores ? s.scores.math : '—'}</td>
+      <td class="score-cell">${s.scores ? s.scores.biology : '—'}</td>
+      <td class="score-cell">${s.scores ? s.scores.english : '—'}</td>
+      <td class="score-cell">${s.study_hours}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+  const totalPages = Math.ceil(data.total / 20);
+  const pg = document.getElementById('pagination');
+  pg.innerHTML = '';
+  if (totalPages <= 1) return;
+  pg.innerHTML = `<span class="pg-info">${data.total.toLocaleString()} students · Page ${currentPage} of ${totalPages}</span><div class="pg-btns">${currentPage>1?'<button class="pg-btn" onclick="loadStudents('+(currentPage-1)+')">← Previous</button>':''}${currentPage<totalPages?'<button class="pg-btn" onclick="loadStudents('+(currentPage+1)+')">Next →</button>':''}</div>`;
+}
+
+loadStudents(1);
+</script>
+</body>
+</html>
