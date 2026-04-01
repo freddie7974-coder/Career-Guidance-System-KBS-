@@ -472,13 +472,13 @@ if __name__ == "__main__":
         print("─" * 65)
         report = run_batch_test(engine, num_students=20, verbose=True)
 
-        # ── 3. Edge case tests ──
+        ### 3. Edge case tests
         print("\n" + "─" * 65)
         print("  SECTION 3 — EDGE CASE TESTS")
         print("─" * 65)
         run_edge_case_tests(engine)
 
-        # ── 4. Final summary ──
+        ### 4. Final summary 
         print("=" * 65)
         print("  ✅ WEEK 4 TESTING COMPLETE")
         print("=" * 65)
