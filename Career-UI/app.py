@@ -2,10 +2,14 @@
 #   KNOWLEDGE-BASED CAREER GUIDANCE SYSTEM — Flask App
 #   Integrates Week 1 + Week 2 + Week 3
 # ============================================================
-import os, csv, pickle
+import os, csv, pickle, sys
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
+
+# Add parent directory to path so we can import week4_inference
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from week4_inference import derive_profile_from_scores
 
 app = Flask(__name__)
 
@@ -165,16 +169,42 @@ def status(): return jsonify({"mongo": MONGO_AVAILABLE, "model": "loaded"})
 @app.route("/recommend", methods=["POST"])
 def recommend():
     d = request.json
-    name=d.get("name","Unknown"); interests=d.get("interests",[]); skills=d.get("skills",[]); traits=d.get("traits",[])
-    math=int(d.get("math",70)); history=int(d.get("history",70)); physics=int(d.get("physics",70))
-    chemistry=int(d.get("chemistry",70)); biology=int(d.get("biology",70)); english=int(d.get("english",70))
-    geography=int(d.get("geography",70)); study_hours=int(d.get("study_hours",10))
-    gender=int(d.get("gender",0)); part_time=int(d.get("part_time",0))
-    absence=int(d.get("absence",2)); extracurricular=int(d.get("extracurricular",0))
-    results = get_recommendations(interests,skills,traits,math,history,physics,chemistry,biology,english,geography,study_hours,gender,part_time,absence,extracurricular)
-    doc = {"name":name,"interests":interests,"skills":skills,"traits":traits,"math":math,"history":history,"physics":physics,"chemistry":chemistry,"biology":biology,"english":english,"geography":geography,"study_hours":study_hours,"created_at":datetime.utcnow().isoformat()}
+    # Extract numerical data for the derivation engine
+    row_data = {
+        'math_score': int(d.get("math", 70)),
+        'history_score': int(d.get("history", 70)),
+        'physics_score': int(d.get("physics", 70)),
+        'chemistry_score': int(d.get("chemistry", 70)),
+        'biology_score': int(d.get("biology", 70)),
+        'english_score': int(d.get("english", 70)),
+        'geography_score': int(d.get("geography", 70)),
+        'weekly_self_study_hours': int(d.get("study_hours", 10)),
+        'extracurricular_activities': "True" if int(d.get("extracurricular", 0)) else "False"
+    }
+
+    # Auto-derive qualitative traits from quantitative scores
+    d_ints, d_skills, d_traits = derive_profile_from_scores(row_data)
+
+    # Run recommendations using derived info
+    name = d.get("name", "Unknown")
+    math = row_data['math_score']
+    history = row_data['history_score']
+    physics = row_data['physics_score']
+    chemistry = row_data['chemistry_score']
+    biology = row_data['biology_score']
+    english = row_data['english_score']
+    geography = row_data['geography_score']
+    study_hours = row_data['weekly_self_study_hours']
+    gender = int(d.get("gender", 0))
+    part_time = int(d.get("part_time", 0))
+    absence = int(d.get("absence", 2))
+    extracurricular = int(d.get("extracurricular", 0))
+    
+    results = get_recommendations(d_ints, d_skills, d_traits, math, history, physics, chemistry, biology, english, geography, study_hours, gender, part_time, absence, extracurricular)
+    doc = {"name": name, "interests": list(d_ints), "skills": list(d_skills), "traits": list(d_traits), "math": math, "history": history, "physics": physics, "chemistry": chemistry, "biology": biology, "english": english, "geography": geography, "study_hours": study_hours, "created_at": datetime.utcnow().isoformat()}
     if MONGO_AVAILABLE:
-        profiles_col.insert_one({**doc}); recommend_col.insert_one({"name":name,"recommendations":results,"created_at":datetime.utcnow().isoformat()})
+        profiles_col.insert_one({**doc})
+        recommend_col.insert_one({"name": name, "recommendations": results, "created_at": datetime.utcnow().isoformat()})
     else:
         _mem_profiles.insert(0, doc)
         if len(_mem_profiles) > 100: _mem_profiles.pop()

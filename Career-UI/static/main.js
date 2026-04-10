@@ -163,6 +163,18 @@ function showResults(name, results, interests, scores) {
       <div class="conf-bar" style="width:0%;background:${confColor}" data-w="${top.score}%"></div>
     </div>`;
 
+  // AI Reasoning explanation
+  const topCareer = results[0];
+  if (topCareer && topCareer.fc_reasons) {
+    document.getElementById('explanation-text').innerText = topCareer.fc_reasons.join(", ");
+  }
+  
+  if (topCareer && topCareer.conflict_note) {
+    const badge = document.getElementById('conflict-badge');
+    badge.innerText = `⚖️ Logic: ${topCareer.conflict_note}`;
+    badge.style.display = 'block';
+  }
+
   // Rule-based explanation
   const rules = buildRules(top.name, interests, scores);
   document.getElementById('rec-rules').innerHTML = `

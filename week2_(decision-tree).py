@@ -1,7 +1,7 @@
-# ============================================================
+# 
 #   KNOWLEDGE-BASED CAREER GUIDANCE SYSTEM
 #   Week 2: Decision Tree Model
-# ============================================================
+# 
 #
 # WHAT WE DO THIS WEEK:
 #   1. Load and prepare the real student dataset (6,000 students)

@@ -1,4 +1,4 @@
-# ============================================================
+# 
 #   KNOWLEDGE-BASED CAREER GUIDANCE SYSTEM
 #   Week 1: Research & Planning — Data Structures & Knowledge Base
 
@@ -12,7 +12,7 @@
 #   - Conflict resolution handles disagreements between rules and the model
 #
 # Run this file with: python week1_career_guidance.py
-# ============================================================
+#
 
 
 # -------------------------------------------------------
