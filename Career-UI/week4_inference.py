@@ -34,15 +34,16 @@ import sys
 import pandas as pd
 from collections import defaultdict
 
-# Import Week 1 knowledge base and engine 
-# This keeps all the logic in one place — week4 reuses week1 directly.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Remove the sys.path.insert line.
+# Import week1 directly:
 from week1_career_guidance import (
     CAREER_KNOWLEDGE_BASE,
     KNOWLEDGE_GRAPH,
     create_student_profile,
     calculate_match_score,
     get_career_recommendations,
+    resolve_conflict,
+)
     resolve_conflict,
 )
 

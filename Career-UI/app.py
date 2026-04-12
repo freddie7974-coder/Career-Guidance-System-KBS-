@@ -7,8 +7,8 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 
-# Add parent directory to path so we can import week4_inference
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Remove the sys.path.append lines. 
+# Since week4_inference.py is now in the same folder, just import it directly:
 from week4_inference import derive_profile_from_scores
 
 app = Flask(__name__)
