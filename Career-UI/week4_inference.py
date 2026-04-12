@@ -44,8 +44,6 @@ from week1_career_guidance import (
     get_career_recommendations,
     resolve_conflict,
 )
-    resolve_conflict,
-)
 
 # RIASEC map (same as Week 2)
 RIASEC_MAP = {
